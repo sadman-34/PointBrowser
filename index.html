@@ -1,373 +1,365 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=240, height=320, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Point Browser</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      user-select: none;
-    }
-    body, html {
-      width: 240px;
-      height: 320px;
-      overflow: hidden;
-      background: #111;
-      font-family: Arial, sans-serif;
-      color: #fff;
-    }
-    
-    /* Top Navigation Bar */
-    #nav-bar {
-      width: 240px;
-      height: 32px;
-      background: #222;
-      display: flex;
-      align-items: center;
-      padding: 2px 4px;
-      border-bottom: 1px solid #444;
-      z-index: 100;
-      position: relative;
-    }
-    .incognito-theme #nav-bar {
-      background: #2a1135;
-      border-bottom-color: #552266;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=240, height=320, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Point Browser</title>
+<style>
+  :root {
+    --bg-dark: #121212;
+    --panel-bg: #1e1e1e;
+    --accent-neon: #00ff66;
+    --text-main: #ffffff;
+    --text-muted: #888888;
+  }
+  
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+  }
 
-    #url-input {
-      width: 145px;
-      height: 24px;
-      background: #333;
-      border: 1px solid #555;
-      color: #fff;
-      font-size: 10px;
-      padding: 0 4px;
-      border-radius: 3px;
-    }
-    #url-input:focus {
-      outline: 1px solid #00d2ff;
-      background: #444;
-    }
-    .nav-btn {
-      width: 26px;
-      height: 24px;
-      margin-left: 3px;
-      background: #444;
-      color: white;
-      border: 1px solid #666;
-      font-size: 10px;
-      border-radius: 3px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    #go-btn {
-      width: 34px;
-      height: 24px;
-      margin-left: 3px;
-      background: #0088cc;
-      color: white;
-      border: none;
-      font-size: 10px;
-      border-radius: 3px;
-      cursor: pointer;
-    }
+  body, html {
+    width: 240px;
+    height: 320px;
+    overflow: hidden;
+    background: var(--bg-dark);
+    font-family: monospace, sans-serif;
+    font-size: 11px;
+    color: var(--text-main);
+  }
 
-    /* Browser Canvas Container */
-    #viewport {
-      width: 240px;
-      height: 288px;
-      position: relative;
-      background: #181818;
-      overflow: hidden;
-    }
+  #browser-container {
+    position: relative;
+    width: 240px;
+    height: 320px;
+    display: flex;
+    flex-direction: column;
+  }
 
-    /* Start Page / Dashboard */
-    #start-page {
-      width: 100%;
-      height: 100%;
-      background: #181818;
-      padding: 10px;
-      overflow-y: auto;
-      display: block;
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 10;
-    }
-    .incognito-theme #start-page {
-      background: #180820;
-    }
-    .section-title {
-      font-size: 10px;
-      color: #aaa;
-      margin-bottom: 6px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .bookmark-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 8px;
-    }
-    .bookmark-card {
-      background: #282828;
-      border: 1px solid #3c3c3c;
-      border-radius: 4px;
-      padding: 6px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      cursor: pointer;
-    }
-    .bookmark-card:hover, .bookmark-card.selected {
-      background: #383838;
-      border-color: #0088cc;
-    }
-    .bookmark-icon {
-      width: 24px;
-      height: 24px;
-      margin-bottom: 4px;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      font-weight: bold;
-      color: #fff;
-    }
-    .bookmark-name {
-      font-size: 10px;
-      color: #ddd;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      width: 100%;
-    }
+  /* Navigation Bar */
+  #navbar {
+    height: 28px;
+    background: var(--panel-bg);
+    display: flex;
+    align-items: center;
+    padding: 2px 4px;
+    border-bottom: 1px solid #333;
+    z-index: 100;
+  }
 
-    /* Virtual Mouse Pointer Overlay */
-    #cursor {
-      width: 16px;
-      height: 16px;
-      position: absolute;
-      top: 144px;
-      left: 120px;
-      pointer-events: none;
-      z-index: 9999;
-    }
-    #cursor svg {
-      width: 16px;
-      height: 16px;
-      filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.8));
-    }
+  #url-input {
+    width: 100%;
+    height: 20px;
+    background: #000;
+    border: 1px solid #444;
+    color: var(--accent-neon);
+    font-size: 10px;
+    padding: 0 4px;
+    outline: none;
+    border-radius: 2px;
+  }
 
-    /* On-Screen Status Indicator */
-    #status-bar {
-      position: absolute;
-      bottom: 2px;
-      left: 2px;
-      background: rgba(0, 0, 0, 0.7);
-      color: #00ffcc;
-      font-size: 9px;
-      padding: 2px 4px;
-      border-radius: 2px;
-      pointer-events: none;
-      z-index: 9998;
-    }
-    .incognito-theme #status-bar {
-      color: #cc88ff;
-    }
-  </style>
+  #status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent-neon);
+    margin-left: 4px;
+  }
+
+  #status-indicator.incognito {
+    background: #ff0055;
+  }
+
+  /* Viewport Area */
+  #viewport-frame {
+    width: 240px;
+    height: 268px;
+    border: none;
+    background: #fff;
+  }
+
+  /* Synthetic Virtual Pointer */
+  #virtual-cursor {
+    position: absolute;
+    top: 140px;
+    left: 115px;
+    width: 12px;
+    height: 12px;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+  }
+
+  #virtual-cursor::before {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 10px solid var(--accent-neon);
+    transform: rotate(-35deg);
+    filter: drop-shadow(0px 0px 2px #000);
+  }
+
+  /* Overlay UI */
+  .overlay {
+    position: absolute;
+    top: 28px;
+    left: 0;
+    width: 240px;
+    height: 268px;
+    background: rgba(18, 18, 18, 0.95);
+    display: none;
+    flex-direction: column;
+    padding: 8px;
+    z-index: 500;
+  }
+
+  .overlay.active {
+    display: flex;
+  }
+
+  .overlay-title {
+    color: var(--accent-neon);
+    border-bottom: 1px solid #333;
+    padding-bottom: 4px;
+    margin-bottom: 6px;
+  }
+
+  .bookmark-list {
+    list-style: none;
+    overflow-y: auto;
+  }
+
+  .bookmark-item {
+    padding: 6px;
+    margin-bottom: 4px;
+    background: #252525;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+
+  /* Status Bar Footer */
+  #footer-bar {
+    height: 24px;
+    background: var(--panel-bg);
+    border-top: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 6px;
+    font-size: 9px;
+    color: var(--text-muted);
+  }
+</style>
 </head>
 <body>
 
-  <div id="nav-bar">
-    <input type="text" id="url-input" value="" placeholder="Search or enter URL (* key)">
-    <button class="nav-btn" id="home-btn" title="Home" onclick="goHome()">🏠</button>
-    <button class="nav-btn" id="incog-btn" title="Incognito" onclick="toggleIncognito()">🕵️</button>
-    <button id="go-btn" onclick="loadUrl()">GO</button>
+<div id="browser-container">
+  <div id="navbar">
+    <input type="text" id="url-input" value="https://example.com" />
+    <div id="status-indicator"></div>
   </div>
 
-  <div id="viewport">
-    <!-- Start Page Dashboard -->
-    <div id="start-page">
-      <div class="section-title">Point Browser - Start Page</div>
-      <div class="bookmark-grid" id="bookmark-grid"></div>
-    </div>
-    
-    <!-- Virtual Pointer SVG -->
-    <div id="cursor">
-      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M4.5 3L19 12.5L12 14.5L8.5 21L4.5 3Z" fill="#FF0000" stroke="#FFFFFF" stroke-width="2"/>
-      </svg>
-    </div>
+  <iframe id="viewport-frame" src="about:blank" sandbox="allow-scripts allow-forms allow-same-origin"></iframe>
 
-    <div id="status-bar">HOME | X: 120 Y: 144</div>
+  <div id="bookmark-overlay" class="overlay">
+    <div class="overlay-title">Bookmarks (Press SoftLeft to Exit)</div>
+    <ul class="bookmark-list" id="bookmark-container"></ul>
   </div>
 
-  <script>
-    const cursor = document.getElementById('cursor');
-    const startPage = document.getElementById('start-page');
-    const urlInput = document.getElementById('url-input');
-    const statusBar = document.getElementById('status-bar');
-    const bookmarkGrid = document.getElementById('bookmark-grid');
+  <div id="footer-bar">
+    <span>[F1] Menu</span>
+    <span id="incognito-label">Mode: Normal</span>
+    <span>[F2] Back</span>
+  </div>
 
-    let posX = 120;
-    let posY = 144;
-    const speed = 6;
-    const bounds = { minX: 0, maxX: 230, minY: 0, maxY: 275 };
-    let isIncognito = false;
+  <div id="virtual-cursor"></div>
+</div>
 
-    // Default Bookmarks
-    const bookmarks = [
-      { name: "Google", url: "https://lite.duckduckgo.com/lite/", color: "#4285F4", icon: "G" },
-      { name: "Facebook", url: "https://m.facebook.com", color: "#1877F2", icon: "f" },
-      { name: "YouTube", url: "https://lite.duckduckgo.com/lite/?q=site:youtube.com", color: "#FF0000", icon: "▶" },
-      { name: "Java", url: "https://sadman-34.github.io/j2me-hub/", color: "#00AA55", icon: "☕" }
-    ];
+<script>
+(() => {
+  // Config & State
+  const CONFIG = {
+    SCREEN_W: 240,
+    SCREEN_H: 320,
+    NAV_H: 28,
+    FOOTER_H: 24,
+    MAX_SPEED: 7,
+    ACCEL: 0.8,
+    FRICTION: 0.82
+  };
 
-    function renderBookmarks() {
-      bookmarkGrid.innerHTML = '';
-      bookmarks.forEach((bm) => {
-        const card = document.createElement('div');
-        card.className = 'bookmark-card';
-        card.innerHTML = `
-          <div class="bookmark-icon" style="background:${bm.color}">${bm.icon}</div>
-          <div class="bookmark-name">${bm.name}</div>
-        `;
-        card.onclick = () => navigateTo(bm.url);
-        bookmarkGrid.appendChild(card);
-      });
+  const state = {
+    x: 120,
+    y: 160,
+    vx: 0,
+    vy: 0,
+    keys: {},
+    incognito: false,
+    bookmarks: [
+      { name: "DuckDuckGo Lite", url: "https://lite.duckduckgo.com/lite/" },
+      { name: "Wikipedia Mobile", url: "https://en.m.wikipedia.org" },
+      { name: "Hacker News", url: "https://news.ycombinator.com" }
+    ]
+  };
+
+  // DOM Handles
+  const cursor = document.getElementById('virtual-cursor');
+  const iframe = document.getElementById('viewport-frame');
+  const urlInput = document.getElementById('url-input');
+  const indicator = document.getElementById('status-indicator');
+  const incognitoLabel = document.getElementById('incognito-label');
+  const bookmarkOverlay = document.getElementById('bookmark-overlay');
+  const bookmarkContainer = document.getElementById('bookmark-container');
+
+  // Load Initial Bookmarks
+  function renderBookmarks() {
+    bookmarkContainer.innerHTML = '';
+    state.bookmarks.forEach(bm => {
+      const li = document.createElement('li');
+      li.className = 'bookmark-item';
+      li.innerText = bm.name;
+      li.onclick = () => loadUrl(bm.url);
+      bookmarkContainer.appendChild(li);
+    });
+  }
+  renderBookmarks();
+
+  // Navigation Logic
+  function loadUrl(url) {
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url;
     }
+    urlInput.value = url;
+    iframe.src = url;
+    bookmarkOverlay.classList.remove('active');
+  }
 
-    function updateCursorPosition(dx, dy) {
-      posX = Math.max(bounds.minX, Math.min(bounds.maxX, posX + dx));
-      posY = Math.max(bounds.minY, Math.min(bounds.maxY, posY + dy));
-      cursor.style.left = posX + 'px';
-      cursor.style.top = posY + 'px';
-      statusBar.innerText = `HOME | X:${Math.round(posX)} Y:${Math.round(posY)}`;
-    }
-
-    function navigateTo(url) {
-      // Opens external links safely while maintaining app structure
-      window.open(url, '_blank');
-    }
-
-    function goHome() {
-      urlInput.value = '';
-      updateCursorPosition(0, 0);
-    }
-
-    function toggleIncognito() {
-      isIncognito = !isIncognito;
-      document.body.classList.toggle('incognito-theme', isIncognito);
-      document.getElementById('incog-btn').style.background = isIncognito ? '#662288' : '#444';
-      updateCursorPosition(0, 0);
-    }
-
-    function loadUrl() {
-      let query = urlInput.value.trim();
-      if (!query) return;
-
-      let targetUrl = query;
-      if (!query.startsWith('http://') && !query.startsWith('https://') && !query.includes('.')) {
-        targetUrl = `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(query)}`;
-      } else if (!query.startsWith('http://') && !query.startsWith('https://')) {
-        targetUrl = 'https://' + query;
-      }
-
-      navigateTo(targetUrl);
+  urlInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      loadUrl(urlInput.value);
       urlInput.blur();
     }
+  });
 
-    function triggerClick() {
-      cursor.style.transform = 'scale(0.8)';
-      setTimeout(() => cursor.style.transform = 'scale(1.0)', 150);
+  // Physical Key Inputs
+  window.addEventListener('keydown', (e) => {
+    state.keys[e.key] = true;
 
-      const targetElement = document.elementFromPoint(posX, posY + 32);
-      const card = targetElement ? targetElement.closest('.bookmark-card') : null;
-      if (card) {
-        const index = Array.from(bookmarkGrid.children).indexOf(card);
-        if (index > -1 && bookmarks[index]) {
-          navigateTo(bookmarks[index].url);
-        }
-      } else if (targetElement) {
-        targetElement.click();
-      }
+    // Toggle Bookmarks Overlay (SoftLeft / F1)
+    if (e.key === 'F1' || e.key === 'SoftLeft') {
+      e.preventDefault();
+      bookmarkOverlay.classList.toggle('active');
     }
 
-    // Continuous Hold-to-Move DPAD Engine
-    const keysPressed = {};
-    let animationFrameId = null;
+    // Navigation Back (SoftRight / F2)
+    if (e.key === 'F2' || e.key === 'SoftRight') {
+      e.preventDefault();
+      try { iframe.contentWindow.history.back(); } catch(err) {}
+    }
 
-    function processMovementLoop() {
-      let dx = 0;
-      let dy = 0;
-
-      if (keysPressed['ArrowUp']) dy -= speed;
-      if (keysPressed['ArrowDown']) dy += speed;
-      if (keysPressed['ArrowLeft']) dx -= speed;
-      if (keysPressed['ArrowRight']) dx += speed;
-
-      if (dx !== 0 || dy !== 0) {
-        updateCursorPosition(dx, dy);
-      }
-
-      if (keysPressed['ArrowUp'] || keysPressed['ArrowDown'] || 
-          keysPressed['ArrowLeft'] || keysPressed['ArrowRight']) {
-        animationFrameId = requestAnimationFrame(processMovementLoop);
+    // Toggle Incognito (# Key)
+    if (e.key === '#' || e.key === 'Hash') {
+      state.incognito = !state.incognito;
+      indicator.classList.toggle('incognito', state.incognito);
+      incognitoLabel.innerText = state.incognito ? 'Mode: Private' : 'Mode: Normal';
+      if (state.incognito) {
+        iframe.setAttribute('sandbox', 'allow-scripts'); // Restrict storage write permissions
       } else {
-        animationFrameId = null;
+        iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-same-origin');
       }
     }
 
-    window.addEventListener('keydown', function (e) {
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(e.key)) {
-        if (document.activeElement !== urlInput) e.preventDefault();
-      }
+    // Focus URL Bar (Key 1)
+    if (e.key === '1' || e.key === 'Digit1') {
+      urlInput.focus();
+    }
 
-      if (document.activeElement === urlInput && e.key !== 'Escape') {
-        if (e.key === 'Enter') loadUrl();
-        return;
+    // Cursor Click Emulation (Center D-Pad / Enter / Key 5)
+    if (e.key === 'Enter' || e.key === 'Select' || e.key === '5') {
+      if (document.activeElement !== urlInput) {
+        executeVirtualClick(state.x, state.y);
       }
+    }
+  });
 
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-        if (!keysPressed[e.key]) {
-          keysPressed[e.key] = true;
-          if (!animationFrameId) {
-            animationFrameId = requestAnimationFrame(processMovementLoop);
+  window.addEventListener('keyup', (e) => {
+    state.keys[e.key] = false;
+  });
+
+  // Synthesize Click Event at Cursor Coordinates
+  function executeVirtualClick(x, y) {
+    const el = document.elementFromPoint(x, y);
+    if (!el) return;
+
+    if (el === iframe) {
+      // Calculate internal relative coordinates within target iframe
+      const rect = iframe.getBoundingClientRect();
+      const relX = x - rect.left;
+      const relY = y - rect.top;
+      
+      try {
+        const innerDoc = iframe.contentDocument || iframe.contentWindow.document;
+        const target = innerDoc.elementFromPoint(relX, relY);
+        if (target) {
+          target.click();
+          if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+            target.focus();
           }
         }
-        return;
+      } catch (err) {
+        // Fallback cross-origin click indicator
+        console.warn('Cross-origin click triggered at frame position:', relX, relY);
       }
+    } else {
+      el.click();
+      if (el.tagName === 'INPUT') el.focus();
+    }
+  }
 
-      switch (e.key) {
-        case 'Enter':
-        case 'Select':
-          triggerClick();
-          break;
-        case '*':
-          urlInput.focus();
-          urlInput.select();
-          break;
-        case '#':
-          goHome();
-          break;
-      }
-    });
+  // Continuous Physics Loop
+  function updatePhysics() {
+    let ax = 0;
+    let ay = 0;
 
-    window.addEventListener('keyup', function (e) {
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-        keysPressed[e.key] = false;
-      }
-    });
+    if (state.keys['ArrowLeft'])  ax -= CONFIG.ACCEL;
+    if (state.keys['ArrowRight']) ax += CONFIG.ACCEL;
+    if (state.keys['ArrowUp'])    ay -= CONFIG.ACCEL;
+    if (state.keys['ArrowDown'])  ay += CONFIG.ACCEL;
 
-    renderBookmarks();
-  </script>
+    // Apply acceleration and friction
+    state.vx = (state.vx + ax) * CONFIG.FRICTION;
+    state.vy = (state.vy + ay) * CONFIG.FRICTION;
+
+    // Clamp speed limits
+    state.vx = Math.max(-CONFIG.MAX_SPEED, Math.min(CONFIG.MAX_SPEED, state.vx));
+    state.vy = Math.max(-CONFIG.MAX_SPEED, Math.min(CONFIG.MAX_SPEED, state.vy));
+
+    // Update position
+    state.x += state.vx;
+    state.y += state.vy;
+
+    // Screen Bounds Clamping
+    state.x = Math.max(0, Math.min(CONFIG.SCREEN_W, state.x));
+    state.y = Math.max(CONFIG.NAV_H, Math.min(CONFIG.SCREEN_H - CONFIG.FOOTER_H, state.y));
+
+    // Render Cursor Location
+    cursor.style.left = `${state.x}px`;
+    cursor.style.top = `${state.y}px`;
+
+    requestAnimationFrame(updatePhysics);
+  }
+
+  // Start Engine Loop
+  requestAnimationFrame(updatePhysics);
+
+})();
+</script>
 </body>
 </html>
