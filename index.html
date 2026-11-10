@@ -223,7 +223,7 @@
     const bounds = { minX: 0, maxX: 230, minY: 0, maxY: 275 };
     let isIncognito = false;
 
-    // Default Bookmarks (DuckDuckGo Lite handles searches cleanly)
+    // Default Bookmarks
     const bookmarks = [
       { name: "Google", url: "https://lite.duckduckgo.com/lite/", color: "#4285F4", icon: "G" },
       { name: "Facebook", url: "https://m.facebook.com", color: "#1877F2", icon: "f" },
@@ -250,13 +250,12 @@
       posY = Math.max(bounds.minY, Math.min(bounds.maxY, posY + dy));
       cursor.style.left = posX + 'px';
       cursor.style.top = posY + 'px';
-      const modeTxt = isIncognito ? "INCOGNITO" : "HOME";
-      statusBar.innerText = `${modeTxt} | X:${Math.round(posX)} Y:${Math.round(posY)}`;
+      statusBar.innerText = `HOME | X:${Math.round(posX)} Y:${Math.round(posY)}`;
     }
 
     function navigateTo(url) {
-      // Direct window location redirect to bypass iframe restrictions
-      window.location.href = url;
+      // Opens external links safely while maintaining app structure
+      window.open(url, '_blank');
     }
 
     function goHome() {
