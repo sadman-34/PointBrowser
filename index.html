@@ -231,6 +231,7 @@
     let currentZoom = 1.0;
     let isIncognito = false;
 
+    // Default Bookmarks
     const bookmarks = [
       { name: "Google", url: "https://lite.duckduckgo.com/lite/", color: "#4285F4", icon: "G" },
       { name: "Facebook", url: "https://m.facebook.com", color: "#1877F2", icon: "f" },
@@ -264,7 +265,14 @@
     function navigateTo(url) {
       startPage.style.display = 'none';
       iframe.style.display = 'block';
-      iframe.src = url;
+      
+      // Use proxy for external sites blocking framing, skip GitHub Pages & local links
+      if (url.startsWith('http') && !url.includes('github.io')) {
+        iframe.src = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+      } else {
+        iframe.src = url;
+      }
+      
       urlInput.value = url;
       updateCursorPosition(0, 0);
     }
@@ -288,7 +296,6 @@
       if (!query) return;
 
       let targetUrl = query;
-      // If it doesn't look like a URL, route it through an embed-safe search engine (DuckDuckGo Lite)
       if (!query.startsWith('http://') && !query.startsWith('https://') && !query.includes('.')) {
         targetUrl = `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(query)}`;
       } else if (!query.startsWith('http://') && !query.startsWith('https://')) {
@@ -323,6 +330,31 @@
       }
     }
 
+    // Continuous Hold-to-Move DPAD Engine
+    const keysPressed = {};
+    let animationFrameId = null;
+
+    function processMovementLoop() {
+      let dx = 0;
+      let dy = 0;
+
+      if (keysPressed['ArrowUp']) dy -= speed;
+      if (keysPressed['ArrowDown']) dy += speed;
+      if (keysPressed['ArrowLeft']) dx -= speed;
+      if (keysPressed['ArrowRight']) dx += speed;
+
+      if (dx !== 0 || dy !== 0) {
+        updateCursorPosition(dx, dy);
+      }
+
+      if (keysPressed['ArrowUp'] || keysPressed['ArrowDown'] || 
+          keysPressed['ArrowLeft'] || keysPressed['ArrowRight']) {
+        animationFrameId = requestAnimationFrame(processMovementLoop);
+      } else {
+        animationFrameId = null;
+      }
+    }
+
     window.addEventListener('keydown', function (e) {
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(e.key)) {
         if (document.activeElement !== urlInput) e.preventDefault();
@@ -333,11 +365,17 @@
         return;
       }
 
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        if (!keysPressed[e.key]) {
+          keysPressed[e.key] = true;
+          if (!animationFrameId) {
+            animationFrameId = requestAnimationFrame(processMovementLoop);
+          }
+        }
+        return;
+      }
+
       switch (e.key) {
-        case 'ArrowUp': updateCursorPosition(0, -speed); break;
-        case 'ArrowDown': updateCursorPosition(0, speed); break;
-        case 'ArrowLeft': updateCursorPosition(-speed, 0); break;
-        case 'ArrowRight': updateCursorPosition(speed, 0); break;
         case 'Enter':
         case 'Select':
           triggerClick();
@@ -348,7 +386,7 @@
           break;
         case '3':
           currentZoom = Math.max(0.5, currentZoom - 0.1);
-          iframe.style.transform = `scale(${currentZooma})`; // fixed typo
+          iframe.style.transform = `scale(${currentZoom})`;
           break;
         case '7':
           if (iframe.style.display === 'block') iframe.contentWindow.scrollBy(0, -100);
@@ -365,6 +403,12 @@
         case '#':
           goHome();
           break;
+      }
+    });
+
+    window.addEventListener('keyup', function (e) {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        keysPressed[e.key] = false;
       }
     });
 
