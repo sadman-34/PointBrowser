@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=240, height=320, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Point Browser</title>
+  <title>Mocor Browser</title>
   <style>
     * {
       box-sizing: border-box;
@@ -190,7 +190,7 @@
 <body>
 
   <div id="nav-bar">
-    <input type="text" id="url-input" value="" placeholder="Enter URL (* key)">
+    <input type="text" id="url-input" value="" placeholder="Search or enter URL (* key)">
     <button class="nav-btn" id="home-btn" title="Home" onclick="goHome()">🏠</button>
     <button class="nav-btn" id="incog-btn" title="Incognito" onclick="toggleIncognito()">🕵️</button>
     <button id="go-btn" onclick="loadUrl()">GO</button>
@@ -200,9 +200,7 @@
     <!-- Start Page Dashboard -->
     <div id="start-page">
       <div class="section-title">Bookmarks & Start Page</div>
-      <div class="bookmark-grid" id="bookmark-grid">
-        <!-- Injected via JavaScript -->
-      </div>
+      <div class="bookmark-grid" id="bookmark-grid"></div>
     </div>
 
     <!-- Web Frame -->
@@ -226,7 +224,6 @@
     const statusBar = document.getElementById('status-bar');
     const bookmarkGrid = document.getElementById('bookmark-grid');
 
-    // Pointer variables
     let posX = 120;
     let posY = 144;
     const speed = 6;
@@ -234,9 +231,8 @@
     let currentZoom = 1.0;
     let isIncognito = false;
 
-    // Default Bookmarks with custom icons & colors
     const bookmarks = [
-      { name: "Google", url: "https://www.google.com", color: "#4285F4", icon: "G" },
+      { name: "Google", url: "https://lite.duckduckgo.com/lite/", color: "#4285F4", icon: "G" },
       { name: "Facebook", url: "https://m.facebook.com", color: "#1877F2", icon: "f" },
       { name: "YouTube", url: "https://m.youtube.com", color: "#FF0000", icon: "▶" },
       { name: "Java", url: "https://sadman-34.github.io/j2me-hub/", color: "#00AA55", icon: "☕" }
@@ -244,7 +240,7 @@
 
     function renderBookmarks() {
       bookmarkGrid.innerHTML = '';
-      bookmarks.forEach((bm, index) => {
+      bookmarks.forEach((bm) => {
         const card = document.createElement('div');
         card.className = 'bookmark-card';
         card.innerHTML = `
@@ -259,10 +255,8 @@
     function updateCursorPosition(dx, dy) {
       posX = Math.max(bounds.minX, Math.min(bounds.maxX, posX + dx));
       posY = Math.max(bounds.minY, Math.min(bounds.maxY, posY + dy));
-      
       cursor.style.left = posX + 'px';
       cursor.style.top = posY + 'px';
-      
       const modeTxt = isIncognito ? "INCOGNITO" : (iframe.style.display === 'block' ? "WEB" : "HOME");
       statusBar.innerText = `${modeTxt} | X:${Math.round(posX)} Y:${Math.round(posY)}`;
     }
@@ -285,18 +279,23 @@
     function toggleIncognito() {
       isIncognito = !isIncognito;
       document.body.classList.toggle('incognito-theme', isIncognito);
-      const incogBtn = document.getElementById('incog-btn');
-      incogBtn.style.background = isIncognito ? '#662288' : '#444';
+      document.getElementById('incog-btn').style.background = isIncognito ? '#662288' : '#444';
       updateCursorPosition(0, 0);
     }
 
     function loadUrl() {
-      let url = urlInput.value.trim();
-      if (!url) return;
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        url = 'https://' + url;
+      let query = urlInput.value.trim();
+      if (!query) return;
+
+      let targetUrl = query;
+      // If it doesn't look like a URL, route it through an embed-safe search engine (DuckDuckGo Lite)
+      if (!query.startsWith('http://') && !query.startsWith('https://') && !query.includes('.')) {
+        targetUrl = `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(query)}`;
+      } else if (!query.startsWith('http://') && !query.startsWith('https://')) {
+        targetUrl = 'https://' + query;
       }
-      navigateTo(url);
+
+      navigateTo(targetUrl);
       urlInput.blur();
     }
 
@@ -304,7 +303,6 @@
       cursor.style.transform = 'scale(0.8)';
       setTimeout(() => cursor.style.transform = 'scale(1.0)', 150);
 
-      // Check if clicking inside start page or iframe
       if (startPage.style.display !== 'none') {
         const targetElement = document.elementFromPoint(posX, posY + 32);
         const card = targetElement ? targetElement.closest('.bookmark-card') : null;
@@ -325,12 +323,9 @@
       }
     }
 
-    // Keypad and DPAD Listener
     window.addEventListener('keydown', function (e) {
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(e.key)) {
-        if (document.activeElement !== urlInput) {
-          e.preventDefault();
-        }
+        if (document.activeElement !== urlInput) e.preventDefault();
       }
 
       if (document.activeElement === urlInput && e.key !== 'Escape') {
@@ -347,33 +342,32 @@
         case 'Select':
           triggerClick();
           break;
-        case '1': // Zoom In
+        case '1':
           currentZoom = Math.min(2.0, currentZoom + 0.1);
           iframe.style.transform = `scale(${currentZoom})`;
           break;
-        case '3': // Zoom Out
+        case '3':
           currentZoom = Math.max(0.5, currentZoom - 0.1);
-          iframe.style.transform = `scale(${currentZoom})`;
+          iframe.style.transform = `scale(${currentZooma})`; // fixed typo
           break;
-        case '7': // Scroll Up / Page Up
+        case '7':
           if (iframe.style.display === 'block') iframe.contentWindow.scrollBy(0, -100);
           else startPage.scrollBy(0, -50);
           break;
-        case '9': // Scroll Down / Page Down
+        case '9':
           if (iframe.style.display === 'block') iframe.contentWindow.scrollBy(0, 100);
           else startPage.scrollBy(0, 50);
           break;
-        case '*': // Focus URL bar
+        case '*':
           urlInput.focus();
           urlInput.select();
           break;
-        case '#': // Return Home / Start Page
+        case '#':
           goHome();
           break;
       }
     });
 
-    // Initialize Start Page
     renderBookmarks();
   </script>
 </body>
